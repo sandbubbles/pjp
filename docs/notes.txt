@@ -1,0 +1,119 @@
+NOTES FOR COMPILER IMPLEMENTATION:
+
+//=================================================================================================
+AST STRUCTURE
+Node -- Expression -- Const -- Int
+     |             |        \- Float
+     |             |- Variable
+     |             |- UnOp -- UnMinus
+     |             |       \- Not
+     |             |- BinOp -- Plus
+     |             |        |- Minus
+     |             |        |- Multiply
+     |             |        |- Divide
+     |             |        |- And
+     |             |        |- Or
+     |             |        \- Xor
+     |             \- TernaryOp
+     \- Statement -- For
+                  |- While
+                  |- If
+                  |- Break
+                  |- Continue
+                  |- StatementList
+                  \- Program
+//=================================================================================================
+Once you'll figure out how the llvm library and CMakeList.txt works add a src file for clarity.
+//-------------------------------------------------------------------------------------------------
+There are five types of main structures in code: 
+  identifier, 
+  punctuation, 
+  keyword, 
+  operator, 
+  literal.
+//-------------------------------------------------------------------------------------------------
+In the future add a CErrorHandler class (more details in Crafting Interpreter).
+For that we need to hold information about the line number and offset from the beginning of a line.
+In Crafting interpreter he gets the line number and offset in the lexan methods. It's better to 
+wrap that in a class in CLexer, which would pass the information directly from the stream, only 
+while getting a symbol it would count the ofsets. 
+The thing can be passed into the token, or ast node (note that this violates separation concern).
+To do that make a wrapper method in CLexan to make token so that I dont have to have 
+m_Sin . lineNumber () everytime i write CToken.
+smth like (Crafting Interpreter has it if you want to see it in action):
+    CToken                   makeToken                     ( CToken::EType     type );
+    CToken                   makeToken                     ( CToken::EType     type,
+                                                             std::string       str );
+    CToken                   makeToken                     ( CToken::EType     type,
+                                                             int               number );
+    and the content would be smth like:
+    CToken                   makeToken                     ( CToken::EType     type )
+    {
+      return CToken ( type, m_Sin . lineNumber (), m_Sin . offset () ); 
+    }
+
+So, I'm not really sure how this works -> I gues there can be lexical errors (lexer), syntactic
+errors (parser), semantic error (codegen) (what is semantic anyway, though it's got something to do
+with literature). Maybe kiddos of CErrorHandler can solve that, or maybe just one error handler is 
+enough. Anyway, so long.
+
+   In the future we can add this into miscellaneous, add to lexer, add it to tokens and prepare
+   the compile for error messages.
+  class CIstream {
+    public: 
+                             CIstream                      ( std::istream    & sin );
+      uint                   lineNumber                    ( void ) const;
+      uint                   offset                        ( void ) const;
+      bool                   eof                           ( void );
+      int                    get                           ( void );           // this is often called advance
+                                                                               // but in c++ streams get does
+                                                                               // the job, and this way we wont
+                                                                               // have to rewrite everything 
+      int                    peek                          ( void );   
+    private:
+      std::istream         & m_Sin;
+      uint                   m_LineNumber = 1;  
+      uint                   m_Offset = 1;                                      
+  };
+//=================================================================================================
+                             CIstream::CIstream            ( std::istream    & sin )
+  : m_Sin ( sin )
+{
+}
+//-------------------------------------------------------------------------------------------------
+uint                         CIstream::lineNumber          ( void ) const
+{
+  return m_LineNumber;
+}
+//-------------------------------------------------------------------------------------------------
+uint                         CIstream::offset              ( void ) const
+{
+  return m_Offset;
+}
+//-------------------------------------------------------------------------------------------------
+bool                         CIstream::eof                 ( void )
+{
+  return m_Sin . eof ();
+}
+//-------------------------------------------------------------------------------------------------
+int                          CIstream::get                 ( void )            
+{
+  int i = m_Sin . get ();
+
+  if ( i == '\n')
+  {
+    ++m_LineNumber;
+    m_Offset = 1;
+  }
+  else
+    ++m_Offset;
+
+  return i;
+}
+//-------------------------------------------------------------------------------------------------
+int                          CIstream::peek                ( void )
+{
+  return m_Sin . peek ();
+}
+//-------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------

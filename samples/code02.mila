@@ -1,0 +1,75 @@
+program fizzbuzz;
+var num : integer;
+
+
+procedure buzz (n : integer); forward;
+
+procedure fizz (n : integer);
+begin
+  if ( n mod 3 = 0 ) and ( n mod 5 = 0 ) then
+    write ('fizzbuzz');
+  if ( n mod 3 = 0 ) and ( n mod 5 <> 0 ) then
+    write ('fizz');
+  if ( n mod 3 <> 0 ) and ( n mod 5 = 0 ) then
+    write ('buzz');
+  if ( n mod 3 <> 0 ) and ( n mod 5 <> 0 ) then
+    writeln ( n );
+
+  if n = num then
+    exit;
+  inc ( n );
+  buzz ( n );
+end;
+
+procedure buzz (n : integer);
+begin
+  if ( n mod 3 = 0 ) and ( n mod 5 = 0 ) then
+    write ('fizzbuzz');
+  if ( n mod 3 = 0 ) and ( n mod 5 <> 0 ) then
+    write ('fizz');
+  if ( n mod 3 <> 0 ) and ( n mod 5 = 0 ) then
+    write ('buzz');
+  if ( n mod 3 <> 0 ) and ( n mod 5 <> 0 ) then
+    writeln ( n );
+
+  if n = num then
+    exit;
+  inc ( n )
+  fizz ( n );
+end;  
+
+procedure fizzbuzz ( );
+var n: integer;
+begin
+  for n := 0 to num + 1 do 
+  begin
+    if ( n mod 3 = 0 ) and ( n mod 5 = 0 ) then
+      write ('fizzbuzz');
+    if ( n mod 3 = 0 ) and ( n mod 5 <> 0 ) then
+      write ('fizz');
+    if ( n mod 3 <> 0 ) and ( n mod 5 = 0 ) then
+      write ('buzz');
+    if ( n mod 3 <> 0 ) and ( n mod 5 <> 0 ) then
+      writeln ( n );
+  end;
+end;
+
+
+begin
+  write ( 'Enter a number' );
+  readln ( num );
+
+  while num < 0 do
+  begin
+    write ( 'Enter a POSITIVE number' );
+    readln ( num );
+  end
+
+  write ( 'Indirect recursion' );
+  fizz ( 1 );
+
+  write ( '' );
+  write ( 'Iterative' );
+  fizzbuzz ( );
+
+end.

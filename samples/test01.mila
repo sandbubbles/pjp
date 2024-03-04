@@ -1,0 +1,19 @@
+program consts;
+var
+    n: integer;
+begin
+  readln ( n )
+  
+  inc(n);
+
+  if n > 2 then
+    begin
+        write('who hoo');
+    end
+  else
+    begin
+        write('boo hoo');
+    end
+
+  writeln(n);
+end.

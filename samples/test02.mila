@@ -1,0 +1,13 @@
+program factorial;
+var
+    n: integer;
+    m: integer;
+const
+    Multiplyer = 5;
+begin
+    m := Multiplyer;
+    n := Multiplyer mod 3;
+    writeln(n);
+    write('hello some things work');
+    ;
+end.

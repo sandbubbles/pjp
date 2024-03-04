@@ -1,0 +1,93 @@
+//=================================================================================================
+HOW TO TRANSLATE GRAMMAR INTO CODE FOR PARSER
+===============================================================
+Grammar notation 	          | Code representation
+---------------------------------------------------------------
+Terminal	                  | Code to match and consume a token
+Nonterminal	                | Call to that rule’s function
+|	                          | if or switch statement
+* or +	                    | while or for loop
+?	                          | if statement
+//=================================================================================================
+// MILA GRAMMAR
+program        → declaration* block EOF ;
+declaration    → varDecl                                   //later on functions too
+               | constDef ;
+
+constDef       → "const" ( IDENTIFIER "=" NUMBER ";" )* ;
+varDecl        → "var" ( identifiers ":" data_type ";" )* ;
+
+statement      → exprStmt
+               | forStmt
+               | ifStmt
+               | printStmt                                 //a helper for me, properly it should be a function
+               | whileStmt
+               | block ;
+
+forStmt        → 'for' IDENTIFIER ":=" expression direction expression 'do' statement ;
+whileStmt      → "while" expression "do" statement ;
+ifStmt         → "if" expression "then" statement ( "else" statement )? ;
+block          → ( varDecl | constDef )* "begin" statements "end" ;
+exprStmt       → expression ;
+printStmt      → "print" expression ;
+expression     → assignment ;
+assignment     → IDENTIFIER ":=" assignment
+               | logic_or ;
+logic_or       → logic_and ( "or" logic_and )* ;
+logic_and      → equality ( "and" equality )* ;
+equality       → comparison ( ( "<>" | "=" ) comparison )* ;
+comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
+term           → factor ( ( "-" | "+" ) factor )* ;
+factor         → unary ( ( "div" | "*" | "mod" ) unary )* ;
+unary          → ( "not" | "-" | "+" ) unary
+               | primary ;
+primary        → NUMBER | STRING
+               | "(" expression ")"
+               | IDENTIFIER ;
+
+identifiers    → IDENTIFIER ( "," IDENTIFIER )*
+statements     → statement  ( ";" statement )* (";")*      // treat semicolons like whitespaces in Lexer
+
+data_type      → 'integer'
+data_type      → 'string'
+data_type      → 'real'
+
+direction      → 'to'
+direction      → 'downto'
+//=================================================================================================
+// LOX GRAMMAR
+program        → declaration* EOF ;
+declaration    → varDecl
+               | statement ;
+statement      → exprStmt
+               | forStmt
+               | ifStmt
+               | printStmt
+               | whileStmt
+               | block ;
+forStmt        → "for" "(" ( varDecl | exprStmt | ";" )
+                 expression? ";"
+                 expression? ")" statement ;
+whileStmt      → "while" "(" expression ")" statement ;
+ifStmt         → "if" "(" expression ")" statement
+               ( "else" statement )? ;
+block          → "{" declaration* "}" ;
+varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
+exprStmt       → expression ";" ;
+printStmt      → "print" expression ";" ;
+expression     → assignment ;
+assignment     → IDENTIFIER "=" assignment
+               | logic_or ;
+logic_or       → logic_and ( "or" logic_and )* ;
+logic_and      → equality ( "and" equality )* ;
+equality       → comparison ( ( "!=" | "==" ) comparison )* ;
+comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
+term           → factor ( ( "-" | "+" ) factor )* ;
+factor         → unary ( ( "/" | "*" ) unary )* ;
+unary          → ( "!" | "-" ) unary
+               | primary ;
+primary        → "true" | "false" | "nil"
+               | NUMBER | STRING
+               | "(" expression ")"
+               | IDENTIFIER ;
+//=================================================================================================

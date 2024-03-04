@@ -1,0 +1,33 @@
+program lcm;  
+
+function gcd (n1 : integer; n2: integer) : integer;
+var tmp: integer;
+begin
+  if n1 = 0 or n2 = 0 then begin
+    gcd := n1 + n2;
+    exit;
+  end
+
+  if n1 > n2 then begin
+    tmp := n1 mod n2;
+    gcd := gcd ( tmp, n2 );
+  end
+  else begin
+    tmp := n2 mod n1;
+    gcd := gcd ( tmp, n1 );
+  end
+end;
+
+function lcm (n1 : integer; n2: integer) : integer;
+begin
+  lcm:= ( n1 div gcd ( n1 , n2 ) ) * n2;
+end;    
+
+var num1, num2 : integer;
+begin
+  write   ( 'Enter two numbers' );
+  readln  ( num1 );
+  readln  ( num2 );
+  write   ( 'The Lowest Common Multiple is ' );
+  writeln ( lcm ( num1, num2 ) );
+end.

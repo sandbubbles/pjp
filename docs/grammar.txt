@@ -1,0 +1,482 @@
+MILA LL(1) GRAMMAR
+//=================================================================================================
+Notes:
+Pri vyhybani se leve rekurzi se typicky snazim pouzivat '_' pred tim neterminalem (ne ''', protoze
+mi prijde ze kdyz to neni psane rukou, neni to tolik videt, navic hodi se to na uvozovky).
+Pro oznaceni znaku epsilon pouzivam '\eps'.
+Na leve strane pravidel jednoduche uvozovky znaci, ze jejich obsah ma byt primo v kodu.
+
+Not sure:
+Jestli volani funkci a procedur je oky.
+V zadani na courses je print, println, ale v ukazakach write -> optat se jak to ma byt.
+Ma to kolizi u if else.
+
+//=================================================================================================
+//General outline of every program
+->program                 -> 'program' name ';' callables block '.'
+  callables               -> function_block callables
+  callables               -> procedure_block callables
+  callables               -> \eps
+  block                   -> declarations block_content
+  declarations            -> variable_declaration declarations
+  declarations            -> constant_definition declarations
+  declarations            -> \eps
+//-------------------------------------------------------------------------------------------------
+Functions a procedures se mohou misit (jedna funkce, pak procedura, pak zase funkce...), ale musi 
+byt vsechny tyto 'callables' pred definovanim a deklarovanim variables a constants pro main. 
+Pote co jsou functions a procedures je usek s declarations pro main, kde se variables a constants
+mohou misit podobne jako functions a procedures predtim.
+Na konec mame obdobu mainu z C, jde vlastne o block, ktery neni v ramci zadne funkce ci jineho 
+bloku. 
+//=================================================================================================
+//Functions and procedures declarations and definitions
+  function_block          -> function_declaration callables_body ';'
+  function_declaration    -> 'function' name '(' parameter_list ')' ':' data_type ';'
+  procedure_block         -> procedure_declaration callables_body ';'
+  procedure_declaration   -> 'procedure' name '(' parameter_list ')' ';'
+  callables_body          -> block
+  callables_body          -> 'forward'
+  parameter_list          -> name ':' data_type _parameter_list                //todo: maybe redo na names
+  parameter_list          -> \eps
+  _parameter_list         -> ';' name ':' data_type _parameter_list
+  _parameter_list         -> \eps 
+  call                    -> '(' argument_list ')'
+  argument_list           -> argument _argument_list
+  argument_list           -> \eps
+  _argument_list          -> ',' argument _argument_list
+  _argument_list          -> \eps
+  argument                -> name
+  argument                -> const_value
+//-------------------------------------------------------------------------------------------------
+Prijde mi, ze je vhodne nedovolovat vytvaret funkce uvnitr jinych funcki (z ukazek mi prijde, ze by
+to nezapadalo ideove do toho, jak ten jazyk vypada) to je zajisteno tim, ze block se sklada z
+declarations a block_content ('begin' ... 'end'). 
+Pro parametry funkce vzdy se musi napsat jedno jmeno parametru pote jeho typ (napr: 'a: integer'),
+ale kdybychom chteli dovolit psani nekolik parametru a pote zadat datovy typ (napr: 'a, b, c: 
+integer'), staci zmenit name v parameter_list name na names.
+//=================================================================================================
+// Variables and Constants
+  constant_definition     -> 'const' name '=' const_value ';'
+  _constant_definition    -> name '=' const_value ';'  _constant_definition
+  _constant_definition    -> \eps
+  variable_declaration    -> 'var' names ':' data_type ';' _variable_declaration
+  _variable_declaration   -> names ':' data_type ';' _variable_declaration
+  _variable_declaration   -> \eps
+//-------------------------------------------------------------------------------------------------
+Jeslti jsou nejake constants a variables potreba, tak jsou "nagenerovane" v general outline toho
+programu, popripade uz v specificke funkci/procedure. Tato sekce uz jen vezme vzdy dany blok pro
+variables nebo constants a rozepise je na korektni definice/deklarace. Tedy tato sekce "negeneruje"
+misto pro dalsi 'var' a 'const' sekce, jen je rozepise.
+//=================================================================================================
+//Statement, Flow Control, and Function calls 
+  block_content           -> 'begin' statements 'end'
+  statements              -> statement _statements
+  _statements             -> ';' statement _statements
+  _statements             -> \eps
+  statement               -> block_content
+  statement               -> name_statement
+  statement               -> if_statement
+  statement               -> for_statement
+  statement               -> while_statement
+  statement               -> exit_statement
+  statement               -> inc_statement                                     //builtin, maybe separate
+  statement               -> dec_statement                                     //builtin, maybe separate
+  statement               -> write_statement
+  statement               -> read_statement
+  statement               -> \eps                                              // so that this ';;;' is ok
+  name_statement          -> name action
+  action                  -> call
+  action                  -> assign
+  assign                  -> ':=' expression
+  if_statement            -> 'if' expression 'then' statement else_statement
+  else_statement          -> 'else' statement
+  else_statement          -> \eps
+  for_statement           -> 'for' name assign direction expression 'do' statement
+  direction               -> 'to'
+  direction               -> 'downto'
+  while_statement         -> 'while' expression 'do' statement
+  exit_statement          -> 'exit'
+  inc_statement           -> 'inc' '(' name ')' 
+  dec_statement           -> 'dec' '(' name ')'
+  write_statement         -> 'writeln' '(' expression ')' 
+  read_statement          -> 'readln' '(' name ')'
+//-------------------------------------------------------------------------------------------------
+Z ukazek to vypada, ze 'for' a 'while' maji vzdy obsah v 'begin' a 'end' bloku. V C jdou v 
+ekvivalentnich prikazech chlupate zavorky vynechat, paklize je to jeden prikaz, toto adaptujeme i 
+zde. Pro zmeneni tohoto chovani je potreba prepsat 'statement' na 'block_content'.
+
+Dangling else conflict:
+Toto je naznak reseni z http://www.parsifalsoft.com/ifelse.html. Nicmene, prijde mi ze to 
+gramatiku zneprehlednuje, takze je na zvazeni zda dangling else vyresit zde nebo pozdeji v kodu.
+
+  statement               -> open_statement
+  statement               -> closed_statement
+
+  open_statement          -> 'if' expression 'then' statement
+  open_statement          -> 'if' expression 'then' closed_statement 'else' open_statement
+  open_statement          -> loop_statement open_statement
+
+  closed_statement        -> noloop_statement 
+  closed_statement        -> 'if' expression 'then' closed_statement 'else' closed statement
+  closed_statement        -> loop_statement closed_statement
+
+  loop_statement          -> while, for...
+  noloop_statement        -> basically what is not in loop_statement
+
+Consecutives assigns:
+For simplicity we won't allow multiple assigns in a row ( A := B := 4 ) (when I say simplicity I 
+mean the fact that I have no idea how to do AST for the basic version, let alone the improved one).
+  assign                  -> ':=' assign_right
+  assign_right            -> name ':=' assign_right
+  assign_right            -> expression
+
+//=================================================================================================
+//Expressions and operators
+  expression              -> equality
+  equality                -> comparison _equality
+  _equality               -> op_equality comparison _equality
+  _equality               -> \eps
+  comparison              -> term _comparison
+  _comparison             -> op_comparison term _comparison
+  _comparison             -> \eps
+  term                    -> factor _term
+  _term                   -> op_term factor _term
+  _term                   -> \eps
+  factor                  -> unary _factor
+  _factor                 -> op_factor unary _factor
+  _factor                 -> \eps
+  unary                   -> op_unary primary                                  // -10, -(10)
+  unary                   -> primary
+  primary                 -> const_value                                       // 10, "hi"
+  primary                 -> '(' expression ')'
+  primary                 -> name possible_call
+  possible_call           -> call                                              // function/procedure call
+  possible_call           -> \eps                                              // variable
+  op_equality             -> '='
+  op_equality             -> '<>'
+  op_comparison           -> '<'
+  op_comparison           -> '<='
+  op_comparison           -> '>'
+  op_comparison           -> '>='
+  op_term                 -> '+'
+  op_term                 -> '-'
+  op_term                 -> 'or'
+  op_factor               -> '*'
+  op_factor               -> 'div'
+  op_factor               -> 'mod'
+  op_factor               -> 'and'
+  op_unary                -> 'not'
+  op_unary                -> '+'                                               // unarni plus
+  op_unary                -> '-'                                               // unarni minus
+//-------------------------------------------------------------------------------------------------
+Note: 
+Pouzivam zde nazvy, ktere jsme pouzivali na hodinach PJP v trochu jinem kontextu. Jelikoz zde
+nestaci tri urovne (E, T, F, ktere mame z hodiny) a nechtela jsem pridavat ruzne cisla nebo jine
+znaky k oznaceni sestupu (E0, E1, T, T', T", etc.) pouzivam zde nazvoslovi k prioritam a typu
+operatoru podobne jako to dela Robert Nystrom v Crafting Interpreters 
+(http://craftinginterpreters.com/parsing-expressions.html -> v horni tretine stranky, ale pozor,
+neni to zde uplne to same). Jestli me napadne neco lepsiho, nebo najdu sikovnejsi rozdeleni, melo 
+by se to predelat. 
+Toto je Robert Nystromovo cleneni s priklady operatoru z C++ (vyznamem operatoru, ne prioritama):
+                             expression     -> ... 
+                             equality       -> !=, ==, ...
+                             comparison     -> <=, <, ...
+                             term           -> +, -, or, ...
+                             factor         -> /, *, and, ...
+                             unary          -> -, !, ...
+                             primary        -> 0x10, (expressions), hi("person"), ...
+Unary dovoluji davat unarni operatory pred retezec a obecne jakekoliv jine primaries. Nakolik 
+to dava smysl, hmm, no nejsem si jista, ale muzeme takhle jednoduse vysledek volani funkce, nebo 
+vnitrniho expression v zavorkach treba znegovat. Ale zaroven muzeme 'znegovat' retezec coz uz nevim
+nakolik je rozumne.  
+//=================================================================================================
+//Miscelaneous helpers
+  names                   -> name _names
+  _names                  -> ',' name _names
+  _names                  -> \eps
+//-------------------------------------------------------------------------------------------------
+'name' is basically any identifier, 'string' has " around its content, 'number' is just any number.
+//=================================================================================================
+//=================================================================================================
+// Gramatika prepsana tak, aby sekce sly jen copy-pastnout do skriptu z courses na ukazani 
+// rozkladove tabulky (ma to trailing white spaces etc., ale funguje to). Cisla a pismena se mi 
+// nechtelo rozepisovat vsechny, ale nemelo by to delat rozdil.
+
+Terminal alphabet:
+  'program'
+  ';'
+  '.'
+  'function'
+  '('
+  ')'
+  ':' 
+  'procedure' 
+  'forward'
+  'const'
+  '='
+  'var' 
+  'begin'
+  'end'
+  ',' 
+  ':='
+  'if'
+  'then' 
+  'else' 
+  'for'
+  'to'
+  'downto'
+  'while'
+  'do' 
+  'exit'
+  'inc'
+  'dec'
+  'writeln'  
+  'read'
+  '<>'
+  '<'
+  '<='
+  '>'
+  '>='
+  '+'
+  '-'
+  'or'
+  '*'
+  'div'
+  'mod'
+  'and'
+  'not'
+  'integer'
+  'string'
+  'real'
+  '$'
+  '&'
+  '0'
+  '1'
+  '9'
+  '2'
+  '3'
+  '4'
+  '5'
+  '6'
+  '7'
+  '8'
+  '"'
+  'a'
+  'b'
+  'c'
+  'z'
+  '_'
+//-------------------------------------------------------------------------------------------------
+Nonterminal alphabet:
+  program
+  callables
+  block
+  declarations
+  function_block
+  function_declaration
+  procedure_block
+  procedure_declaration
+  callables_body
+  parameter_list
+  _parameter_list
+  constant_definition
+  _constant_definition
+  variable_declaration
+  _variable_declaration
+  block_content
+  statements 
+  _statements
+  statement  
+  name_statement         
+  action         
+  call           
+  argument_list   
+  _argument_list    
+  argument       
+  assign         
+  if_statement   
+  else_statement 
+  for_statement        
+  direction      
+  while_statement
+  exit_statement 
+  inc_statement  
+  dec_statement  
+  write_statement
+  read_statement 
+  expression
+  equality 
+  _equality
+  comparison 
+  _comparison
+  term 
+  _term
+  factor  
+  _factor 
+  unary 
+  primary 
+  possible_call 
+  op_equality 
+  op_comparison
+  op_term 
+  op_factor
+  op_unary
+  names
+  _names
+  name
+  start_name 
+  rest_name
+  data_type
+  const_value
+  number
+  decinumber
+  hexanumber
+  octanumber
+  string
+  string_content
+  char
+  letter
+  digit
+  punctuation
+//-------------------------------------------------------------------------------------------------
+Rules:
+  program                 -> 'program' name ';' callables block '.'
+  callables               -> function_block callables
+  callables               -> procedure_block callables
+  callables               -> 
+  block                   -> declarations block_content
+  declarations            -> variable_declaration declarations
+  declarations            -> constant_definition declarations
+  declarations            -> 
+  function_block          -> function_declaration callables_body ';'
+  function_declaration    -> 'function' name '(' parameter_list ')' ':' data_type ';'
+  procedure_block         -> procedure_declaration callables_body ';'
+  procedure_declaration   -> 'procedure' name '(' parameter_list ')' ';'
+  callables_body          -> block
+  callables_body          -> 'forward'
+  parameter_list          -> name ':' data_type _parameter_list
+  parameter_list          -> 
+  _parameter_list         -> ';' name ':' data_type _parameter_list
+  _parameter_list         -> 
+  constant_definition     -> 'const' name '=' const_value ';'
+  _constant_definition    -> name '=' const_value ';'  _constant_definition
+  _constant_definition    -> 
+  variable_declaration    -> 'var' names ':' data_type ';' _variable_declaration
+  _variable_declaration   -> names ':' data_type ';' _variable_declaration
+  _variable_declaration   -> 
+  block_content           -> 'begin' statements 'end'
+  statements              -> statement _statements
+  _statements             -> ';' statement _statements
+  _statements             -> 
+  statement               -> block_content
+  statement               -> name_statement
+  statement               -> if_statement
+  statement               -> for_statement
+  statement               -> while_statement
+  statement               -> exit_statement
+  statement               -> inc_statement
+  statement               -> dec_statement
+  statement               -> write_statement
+  statement               -> read_statement
+  statement               -> 
+  name_statement          -> name action
+  action                  -> call
+  action                  -> assign
+  call                    -> '(' argument_list ')'
+  argument_list           -> argument _argument_list
+  argument_list           -> 
+  _argument_list          -> ',' argument _argument_list
+  _argument_list          -> 
+  argument                -> name
+  argument                -> const_value
+  assign                  -> ':=' expression
+  if_statement            -> 'if' expression 'then' statement else_statement
+  else_statement          -> 'else' statement
+  else_statement          -> 
+  for_statement           -> 'for' name assign direction expression 'do' statement
+  direction               -> 'to'
+  direction               -> 'downto'
+  while_statement         -> 'while' expression 'do' statement
+  exit_statement          -> 'exit'
+  inc_statement           -> 'inc' '(' name ')' 
+  dec_statement           -> 'dec' '(' name ')'
+  write_statement         -> 'writeln' '(' expression ')' 
+  read_statement          -> 'read' '(' name ')'
+  expression              -> equality
+  equality                -> comparison _equality
+  _equality               -> op_equality comparison _equality
+  _equality               -> 
+  comparison              -> term _comparison
+  _comparison             -> op_comparison term _comparison
+  _comparison             -> 
+  term                    -> factor _term
+  _term                   -> op_term factor _term
+  _term                   -> 
+  factor                  -> unary _factor
+  _factor                 -> op_factor unary _factor
+  _factor                 -> 
+  unary                   -> op_unary primary
+  unary                   -> primary
+  primary                 -> const_value
+  primary                 -> '(' expression ')'
+  primary                 -> name possible_call
+  possible_call           -> call
+  possible_call           -> 
+  op_equality             -> '='
+  op_equality             -> '<>'
+  op_comparison           -> '<'
+  op_comparison           -> '<='
+  op_comparison           -> '>'
+  op_comparison           -> '>='
+  op_term                 -> '+'
+  op_term                 -> '-'
+  op_term                 -> 'or'
+  op_factor               -> '*'
+  op_factor               -> 'div'
+  op_factor               -> 'mod'
+  op_factor               -> 'and'
+  op_unary                -> 'not'
+  op_unary                -> '+'
+  op_unary                -> '-'
+  names                   -> name _names
+  _names                  -> ',' name _names
+  _names                  -> 
+  name                    -> start_name rest_name
+  start_name              -> letter
+  rest_name               -> char rest_name
+  rest_name               -> 
+  data_type               -> 'integer'
+  data_type               -> 'string'
+  data_type               -> 'real'
+  const_value             -> number
+  const_value             -> string
+  number                  -> decinumber
+  number                  -> '$' hexanumber
+  number                  -> '&' octanumber
+  decinumber              -> '0'
+  hexanumber              -> '0'
+  octanumber              -> '0'
+  string                  -> '"' string_content '"'
+  string_content          -> char string_content
+  string_content          -> 
+  char                    -> letter
+  char                    -> digit
+  char                    -> punctuation
+  letter                  -> 'a'
+  letter                  -> 'b'
+  letter                  -> 'c'
+  letter                  -> 'z'
+  digit                   -> '0'
+  digit                   -> '1'
+  digit                   -> '9'
+  digit                   -> '2'
+  digit                   -> '3'
+  digit                   -> '4'
+  digit                   -> '5'
+  digit                   -> '6'
+  digit                   -> '7'
+  digit                   -> '8'
+  punctuation             -> '_'
+//-------------------------------------------------------------------------------------------------
+Initial nonterminal:         program
+//=================================================================================================

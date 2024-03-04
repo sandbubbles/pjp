@@ -1,0 +1,41 @@
+program factorization;
+var max, I: integer;
+const A = 10;
+
+function factorization ( n: integer ): integer;
+var i: integer;
+begin
+  writeln(n);
+  writeln(max);
+  i:=4;
+  writeln(i);
+  if A > 3 then
+    write('worky');
+end;
+
+procedure fact ( n: integer );
+var y: integer;
+begin
+  writeln(n);
+  writeln(max);
+  y:=4;
+  writeln(y);
+  begin
+    begin
+      write('iiiii');
+    end;
+  end;
+  if A > y then
+    write('works');
+end;
+
+begin
+    max := 9;
+    factorization(5);
+    fact(6);
+
+    for I := 0 to 20 do begin
+    writeln(I);
+  end;
+
+end.

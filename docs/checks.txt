@@ -1,0 +1,5 @@
+Checks:
+//=============================================================================
+Add the content from main.cpp when when it's going start being embarrassing 
+having the checks there. Tip for a check: find out how embarrasing is spelled.
+//=============================================================================
